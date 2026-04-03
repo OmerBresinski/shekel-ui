@@ -38,6 +38,24 @@ Icon-only collapsible sidebar using shadcn's `Sidebar` component.
 <Sidebar collapsible="icon" className="border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
 ```
 
+### Icon Centering (CRITICAL)
+
+When using `collapsible="icon"`, the sidebar collapses to 48px wide. The `SidebarGroup` component has default `px-2` padding which can make icons appear off-center.
+
+**To ensure icons are perfectly centered**, remove the horizontal padding from `SidebarGroup`:
+
+```tsx
+<SidebarGroup className="px-0">
+  <SidebarGroupContent>
+    <SidebarMenu>
+      {/* menu items */}
+    </SidebarMenu>
+  </SidebarGroupContent>
+</SidebarGroup>
+```
+
+Or override at the `SidebarContent` level if you have multiple groups.
+
 ### Logo
 
 ```tsx
@@ -489,7 +507,10 @@ Always uses:
 
 The guide page uses a 2x2 grid of sealed cells for steps, plus a full-width section below.
 
-**CRITICAL**: The guide page should NOT have additional title areas inside cells — only the top PageHeader. The entire page uses `bg-card` (white) background, not secondary/cream.
+**CRITICAL RULES**:
+1. The guide page should NOT have additional title areas inside cells — only the top PageHeader
+2. The entire page uses `bg-card` (white) background, not secondary/cream
+3. **NEVER use Card components or rounded bordered boxes inside step cells** — steps are plain text with command blocks, no decorative cards
 
 ### Page Structure
 
@@ -518,9 +539,10 @@ The guide page uses a 2x2 grid of sealed cells for steps, plus a full-width sect
 
 ### Step Cell
 
-Each step cell has a minimum height of 216px to ensure visual consistency:
+Each step cell has a minimum height of 216px. Content is plain text — **NO Card components, NO rounded bordered containers**:
 
 ```tsx
+{/* CORRECT — plain text content */}
 <div className="min-h-[216px] px-8 py-8">
   <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
     Step N
@@ -531,7 +553,24 @@ Each step cell has a minimum height of 216px to ensure visual consistency:
   </p>
   <CommandBlock command="ssh item-1" onCopy={handleCopy} />
 </div>
+
+{/* WRONG — do NOT use Card components or bordered boxes */}
+<div className="px-8 py-8">
+  <Card>  {/* NEVER DO THIS */}
+    <CardHeader>...</CardHeader>
+    <CardContent>...</CardContent>
+  </Card>
+</div>
+
+{/* WRONG — do NOT use rounded bordered containers */}
+<div className="px-8 py-8">
+  <div className="rounded-lg border p-4">  {/* NEVER DO THIS */}
+    ...
+  </div>
+</div>
 ```
+
+The guide page already has visual structure from the sealed grid borders — adding cards inside creates visual noise and breaks the hermetically sealed aesthetic.
 
 | Property | Value | Notes |
 |----------|-------|-------|
