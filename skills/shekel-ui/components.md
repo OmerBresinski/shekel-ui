@@ -199,13 +199,13 @@ Page (flex flex-col h-screen)
 
 ### No Extra Headers in List Panel
 
-The list panel should contain ONLY the scrollable list items — **no section headers, no filter labels, no "MONTHLY BILLS" type headers**. All page context goes in the PageHeader at the top.
+The list panel should contain ONLY the scrollable list items — **no section headers, no filter labels, no category titles**. All page context belongs in the PageHeader at the top of the page.
 
 ```tsx
 {/* WRONG — extra headers inside list panel */}
 <div className="flex h-full flex-col">
-  <div className="px-4 py-2 text-xs uppercase">Filter Stack</div>  {/* NO */}
-  <div className="px-4 py-2 text-xs uppercase">Monthly Bills</div>  {/* NO */}
+  <div className="px-4 py-2 text-xs uppercase">Some Header</div>  {/* NO */}
+  <div className="px-4 py-2 text-xs uppercase">Another Label</div>  {/* NO */}
   <ScrollArea>...</ScrollArea>
 </div>
 
@@ -223,7 +223,7 @@ The list panel should contain ONLY the scrollable list items — **no section he
 - Border: `border-r border-border` separating from the right column
 - No separators between items
 - No padding on the outer `flex flex-col` wrapper
-- **No section headers or labels inside the list**
+- **No section headers, labels, or titles inside the list panel**
 
 ### Individual Item
 
