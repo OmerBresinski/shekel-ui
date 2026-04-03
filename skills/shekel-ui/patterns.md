@@ -437,10 +437,10 @@ function ItemsPage() {
         title="Items"
         description={`${summary.total} items · ${summary.active} active · ${summary.idle} idle`}
       />
-      {/* CRITICAL: overflow-hidden prevents list from pushing page height */}
+      {/* CRITICAL: overflow-hidden + min-h-0 for proper scroll containment */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* List panel */}
-        <div className="w-64 shrink-0 lg:w-72">
+        {/* List panel wrapper - needs h-full */}
+        <div className="h-full w-64 shrink-0 lg:w-72">
           {isLoading ? (
             <div className="flex flex-col gap-3 p-4">
               {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
@@ -449,8 +449,8 @@ function ItemsPage() {
             <ItemList items={items} selectedId={itemId ?? null} />
           ) : null}
         </div>
-        {/* Detail panel */}
-        <div className="min-h-0 flex-1 overflow-hidden">
+        {/* Detail panel - needs h-full + min-h-0 */}
+        <div className="h-full min-h-0 flex-1 overflow-hidden">
           {selectedItem ? (
             <ItemDetail item={selectedItem} records={records ?? []} />
           ) : (
@@ -468,15 +468,20 @@ function ItemsPage() {
 ### 4. Build the list panel
 
 Follow components.md → List Items for the exact pattern. Key points:
-- Container: `h-full flex-col border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]`
+- Container: `flex h-full min-h-0 flex-col border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]`
+- ScrollArea: `min-h-0 flex-1`
 - Each item: `<Link>` with `h-[101px]`, `overflow-hidden`, `px-5`
 - Content uses `w-0 min-w-0 flex-1` trick for truncation
 - Status text right-aligned with `shrink-0`
-- **CRITICAL**: Parent flex container must have `overflow-hidden` to constrain list scrolling
+
+**CRITICAL for scroll to work** — the height chain must be unbroken:
+- List panel wrapper: `h-full`
+- List container: `flex h-full min-h-0 flex-col` (BOTH h-full AND min-h-0)
+- ScrollArea: `min-h-0 flex-1`
 
 ### 5. Build the detail panel
 
-- Container: `flex h-full flex-col bg-card`
+- Container: `flex h-full min-h-0 flex-col bg-card`
 - Top: Metric cards in `grid shrink-0 grid-cols-4 border-b border-border`
 - Bottom: Split table (fixed header + scrollable body)
 

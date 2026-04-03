@@ -161,41 +161,55 @@ Used in the left column of two-column pages (e.g. item list, project list). This
 </div>
 ```
 
-**CRITICAL**: The container MUST have `h-full` to fill the parent. The parent (in the page layout) must have `overflow-hidden` to prevent the list from pushing the page height:
+**CRITICAL — List Panel Scroll Not Working:**
+
+For ScrollArea to work properly within a flex layout, every ancestor in the flex chain needs proper height constraints. Missing `min-h-0` on flex containers prevents children from shrinking below their content height.
+
+### Complete Correct Pattern
 
 ```tsx
-{/* In the page layout */}
-<div className="flex min-h-0 flex-1 overflow-hidden">
-  {/* List panel - with h-full to fill the flex container */}
-  <div className="w-64 shrink-0 lg:w-72">
-    <ItemList items={items} selectedId={selectedId} />
-  </div>
-  {/* Detail panel */}
-  <div className="min-h-0 flex-1 overflow-hidden">
-    <ItemDetail ... />
+{/* Page layout */}
+<div className="flex min-h-0 flex-1 flex-col">
+  <PageHeader ... />
+  <div className="flex min-h-0 flex-1 overflow-hidden">
+    {/* List panel wrapper - needs h-full */}
+    <div className="h-full w-64 shrink-0 lg:w-72">
+      {/* List container - needs BOTH h-full AND min-h-0 */}
+      <div className="flex h-full min-h-0 flex-col border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
+        {/* ScrollArea - needs min-h-0 */}
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="flex flex-col">
+            {items.map(item => <Link ... />)}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
+    {/* Detail panel */}
+    <div className="h-full min-h-0 flex-1 overflow-hidden">
+      <DetailComponent ... />
+    </div>
   </div>
 </div>
 ```
 
-**COMMON MISTAKE — List Overflows Page:**
+### Key Rules
 
-If your list overflows the entire page (adding a scrollbar to the whole window instead of just the list), you're missing one of these:
+1. **`min-h-0` is required on flex containers** that need to shrink below content height — without it, flex items default to `min-height: auto` which prevents shrinking
 
-1. `overflow-hidden` on the flex container wrapping list + detail
-2. `min-h-0` on the flex container (allows flex children to shrink)
-3. `h-full` on the list container itself
-4. `flex-1` on the ScrollArea inside the list
-
-The full chain must be unbroken:
+2. **The height chain must be unbroken** from page root to ScrollArea:
 ```
-Page (flex flex-col h-screen)
+Page (flex min-h-0 flex-1 flex-col)
   └─ PageHeader (shrink-0)
-  └─ Content area (flex min-h-0 flex-1 overflow-hidden)  ← MUST have overflow-hidden
-       └─ List panel (w-64 shrink-0)
-            └─ List container (flex h-full flex-col)  ← MUST have h-full
-                 └─ ScrollArea (flex-1)  ← handles scrolling
-       └─ Detail panel (min-h-0 flex-1 overflow-hidden)
+  └─ Content area (flex min-h-0 flex-1 overflow-hidden)
+       └─ List panel wrapper (h-full w-64 shrink-0)
+            └─ List container (flex h-full min-h-0 flex-col)  ← BOTH h-full AND min-h-0
+                 └─ ScrollArea (min-h-0 flex-1)  ← min-h-0 here too
+       └─ Detail panel (h-full min-h-0 flex-1 overflow-hidden)
 ```
+
+3. **Both `h-full` and `min-h-0` are needed** on the list container:
+   - `h-full` — fills the parent height
+   - `min-h-0` — allows shrinking below content height
 
 ### No Extra Headers in List Panel
 
@@ -203,15 +217,15 @@ The list panel should contain ONLY the scrollable list items — **no section he
 
 ```tsx
 {/* WRONG — extra headers inside list panel */}
-<div className="flex h-full flex-col">
+<div className="flex h-full min-h-0 flex-col">
   <div className="px-4 py-2 text-xs uppercase">Some Header</div>  {/* NO */}
   <div className="px-4 py-2 text-xs uppercase">Another Label</div>  {/* NO */}
   <ScrollArea>...</ScrollArea>
 </div>
 
 {/* CORRECT — just the scrollable list */}
-<div className="flex h-full flex-col border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
-  <ScrollArea className="flex-1">
+<div className="flex h-full min-h-0 flex-col border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
+  <ScrollArea className="min-h-0 flex-1">
     <div className="flex flex-col">
       {items.map(item => <Link ... />)}
     </div>
