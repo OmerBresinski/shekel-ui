@@ -107,6 +107,24 @@ Used in the left column of two-column pages (e.g. item list, project list). This
 </div>
 ```
 
+**CRITICAL**: The container MUST have `h-full` to fill the parent. The parent (in the page layout) must have `overflow-hidden` to prevent the list from pushing the page height:
+
+```tsx
+{/* In the page layout */}
+<div className="flex min-h-0 flex-1 overflow-hidden">
+  {/* List panel - with h-full to fill the flex container */}
+  <div className="w-64 shrink-0 lg:w-72">
+    <ItemList items={items} selectedId={selectedId} />
+  </div>
+  {/* Detail panel */}
+  <div className="min-h-0 flex-1 overflow-hidden">
+    <ItemDetail ... />
+  </div>
+</div>
+```
+
+Without `overflow-hidden` on the parent flex container, a long list will overflow and add a scrollbar to the entire page instead of just the list panel.
+
 - Background: `bg-[#FAF8F7] dark:bg-[#1a1918]` (slightly warmer than `bg-card`)
 - Border: `border-r border-border` separating from the right column
 - No separators between items
@@ -325,6 +343,28 @@ Custom tooltip component for all Recharts charts. Mini-card style with separator
 | Value | `font-mono text-[11px] font-medium text-popover-foreground` |
 | Row gap | `gap-6` between label and value for alignment |
 
+### Label Capitalization
+
+**CRITICAL**: All tooltip labels must be capitalized (Title Case). The label is the left-side text describing the value:
+
+```tsx
+// CORRECT - "Cost" capitalized
+{ color: 'var(--chart-1)', label: 'Cost', value: formatCost(payload[0].value) }
+
+// WRONG - "cost" lowercase
+{ color: 'var(--chart-1)', label: 'cost', value: formatCost(payload[0].value) }
+```
+
+When deriving labels from data keys, capitalize the first letter:
+```tsx
+const rows: TooltipRow[] = payload.map((entry) => ({
+  color: entry.color ?? 'var(--chart-1)',
+  // Capitalize: "input" → "Input"
+  label: String(entry.name).charAt(0).toUpperCase() + String(entry.name).slice(1),
+  value: `${formatTokens(entry.value)} tokens`,
+}));
+```
+
 ### Usage per chart type
 
 | Chart | Title | Rows |
@@ -449,10 +489,39 @@ Always uses:
 
 The guide page uses a 2x2 grid of sealed cells for steps, plus a full-width section below.
 
-### Step Cell
+**CRITICAL**: The guide page should NOT have additional title areas inside cells — only the top PageHeader. The entire page uses `bg-card` (white) background, not secondary/cream.
+
+### Page Structure
 
 ```tsx
-<div className="px-8 py-8">
+<ScrollArea className="h-full bg-card">
+  <div className="flex flex-col">
+    <PageHeader title="Quick Start Guide" description="Get started with..." />
+    
+    {/* Steps row 1 */}
+    <div className="grid grid-cols-2 border-b border-border">
+      <div className="min-h-[216px] px-8 py-8">{/* Step 1 */}</div>
+      <div className="min-h-[216px] border-l border-border px-8 py-8">{/* Step 2 */}</div>
+    </div>
+    
+    {/* Steps row 2 */}
+    <div className="grid grid-cols-2 border-b border-border">
+      <div className="min-h-[216px] px-8 py-8">{/* Step 3 */}</div>
+      <div className="min-h-[216px] border-l border-border px-8 py-8">{/* Step 4 */}</div>
+    </div>
+    
+    {/* Full-width section */}
+    <div className="px-8 py-8">{/* Additional content */}</div>
+  </div>
+</ScrollArea>
+```
+
+### Step Cell
+
+Each step cell has a minimum height of 216px to ensure visual consistency:
+
+```tsx
+<div className="min-h-[216px] px-8 py-8">
   <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
     Step N
   </span>
@@ -464,19 +533,13 @@ The guide page uses a 2x2 grid of sealed cells for steps, plus a full-width sect
 </div>
 ```
 
-### Grid Layout
-
-```tsx
-<div className="grid grid-cols-2 border-b border-border">
-  <div className="px-8 py-8">{/* Step 1 */}</div>
-  <div className="border-l border-border px-8 py-8">{/* Step 2 */}</div>
-</div>
-<div className="grid grid-cols-2 border-b border-border">
-  <div className="px-8 py-8">{/* Step 3 */}</div>
-  <div className="border-l border-border px-8 py-8">{/* Step 4 */}</div>
-</div>
-<div className="px-8 py-8">{/* Full-width section */}</div>
-```
+| Property | Value | Notes |
+|----------|-------|-------|
+| Min height | `min-h-[216px]` | Ensures visual consistency across steps |
+| Padding | `px-8 py-8` | Generous for readability |
+| Step label | `text-[11px] font-medium uppercase tracking-widest text-muted-foreground` | |
+| Heading | `mt-3 font-heading text-xl font-normal` | |
+| Description | `mt-2 text-sm text-muted-foreground` | |
 
 ---
 

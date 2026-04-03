@@ -248,7 +248,7 @@ Use `ScrollArea` from shadcn for all scrollable content. The pattern:
 Charts fill remaining viewport space without scrolling. Two rows of two charts each.
 
 ```tsx
-<div className="flex min-h-0 flex-1 flex-col">
+<div className="flex min-h-0 flex-1 flex-col bg-card">
   <div className="grid min-h-0 flex-1 grid-cols-2 border-b border-border">
     <div className="flex min-h-0 flex-col px-6 py-4">{/* chart 1 */}</div>
     <div className="flex min-h-0 flex-col border-l border-border px-6 py-4">{/* chart 2 */}</div>
@@ -259,6 +259,10 @@ Charts fill remaining viewport space without scrolling. Two rows of two charts e
   </div>
 </div>
 ```
+
+**CRITICAL**: The chart area MUST have `bg-card` (white/dark card) background. This ensures:
+1. Chart hover states look correct (the cursor rectangle uses `fill-muted` which blends into cream but works on white)
+2. Visual distinction between the info cards row and the chart area
 
 Each chart cell:
 - Label: `shrink-0 text-[0.6875rem] font-medium uppercase tracking-widest text-muted-foreground`
@@ -291,6 +295,51 @@ const LazyChart = lazy(() =>
 | Model Y-axis width | `width={140}` with truncation at 16 chars |
 | Pie inner/outer radius | `innerRadius="50%" outerRadius="75%"` |
 | Pie stroke | `strokeWidth={2} stroke="var(--background)"` |
+
+### Pie Chart with Legend
+
+Pie charts MUST include a legend for accessibility. Use `ChartLegend` with `ChartLegendContent`:
+
+```tsx
+<ChartContainer config={statusChartConfig} className="mx-auto h-full max-w-[280px]">
+  <PieChart>
+    <Tooltip content={...} />
+    <ChartLegend content={<ChartLegendContent nameKey="status" />} />
+    <Pie
+      data={data}
+      dataKey="count"
+      nameKey="status"
+      innerRadius="50%"
+      outerRadius="75%"
+      strokeWidth={2}
+      stroke="var(--background)"
+    >
+      {data.map((entry) => (
+        <Cell key={entry.status} fill={entry.fill} />
+      ))}
+    </Pie>
+    {/* Center text for total */}
+    <text x="50%" y="45%" textAnchor="middle" dominantBaseline="central"
+          className="fill-foreground font-heading text-2xl">
+      {total}
+    </text>
+    <text x="50%" y="57%" textAnchor="middle" dominantBaseline="central"
+          className="fill-muted-foreground text-[10px]">
+      items
+    </text>
+  </PieChart>
+</ChartContainer>
+```
+
+The legend config must match the data's nameKey:
+```tsx
+const statusChartConfig = {
+  Idle: { label: 'Idle', color: 'var(--chart-1)' },
+  Active: { label: 'Active', color: 'var(--chart-3)' },
+  Busy: { label: 'Busy', color: 'var(--chart-2)' },
+  Offline: { label: 'Offline', color: 'var(--chart-5)' },
+} satisfies ChartConfig;
+```
 
 ### Keep-Alive Pattern
 
@@ -388,7 +437,8 @@ function ItemsPage() {
         title="Items"
         description={`${summary.total} items · ${summary.active} active · ${summary.idle} idle`}
       />
-      <div className="flex min-h-0 flex-1">
+      {/* CRITICAL: overflow-hidden prevents list from pushing page height */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* List panel */}
         <div className="w-64 shrink-0 lg:w-72">
           {isLoading ? (
@@ -400,7 +450,7 @@ function ItemsPage() {
           ) : null}
         </div>
         {/* Detail panel */}
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {selectedItem ? (
             <ItemDetail item={selectedItem} records={records ?? []} />
           ) : (
@@ -422,6 +472,7 @@ Follow components.md → List Items for the exact pattern. Key points:
 - Each item: `<Link>` with `h-[101px]`, `overflow-hidden`, `px-5`
 - Content uses `w-0 min-w-0 flex-1` trick for truncation
 - Status text right-aligned with `shrink-0`
+- **CRITICAL**: Parent flex container must have `overflow-hidden` to constrain list scrolling
 
 ### 5. Build the detail panel
 
@@ -446,7 +497,7 @@ The relationship between container size, text size, padding, and gap follows con
 | Detail metric card | `200px` | `42px` | 21% | `32/64/32/32` (asymmetric) | `gap-2` |
 | Dashboard info card | `~70px` (auto) | `28px` | ~40% | `16/24` (symmetric) | `gap-1` |
 | List item | `101px` | `15px` (name) | 15% | `0/20` (horizontal only) | `gap-1.5` |
-| Guide step cell | `~180px` (auto) | `20px` (heading) | ~11% | `32/32` (symmetric) | `mt-3` |
+| Guide step cell | `min-h-[216px]` | `20px` (heading) | ~9% | `32/32` (symmetric) | `mt-3` |
 | Chart cell | `flex` (fills space) | `11px` (label only) | N/A | `16/24` (symmetric) | `mt-2` |
 
 ### Padding Rules
