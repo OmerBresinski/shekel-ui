@@ -38,6 +38,24 @@ Icon-only collapsible sidebar using shadcn's `Sidebar` component.
 <Sidebar collapsible="icon" className="border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
 ```
 
+**CRITICAL — Light/Dark Mode Colors:**
+
+The sidebar uses hardcoded hex colors that MUST include both light AND dark variants:
+- Light mode: `bg-[#FAF8F7]` (warm off-white)
+- Dark mode: `dark:bg-[#1a1918]` (warm dark)
+
+If you only specify one, the sidebar will appear in the wrong mode. **Always include both**:
+```tsx
+// CORRECT
+className="bg-[#FAF8F7] dark:bg-[#1a1918]"
+
+// WRONG — sidebar will be dark even in light mode
+className="bg-[#1a1918]"
+
+// WRONG — sidebar will be light even in dark mode  
+className="bg-[#FAF8F7]"
+```
+
 ### Icon Centering Fix (CRITICAL)
 
 When using `collapsible="icon"`, the default shadcn sidebar has icons that appear left-aligned instead of centered. **Two fixes are required in `src/components/ui/sidebar.tsx`:**
@@ -159,12 +177,53 @@ Used in the left column of two-column pages (e.g. item list, project list). This
 </div>
 ```
 
-Without `overflow-hidden` on the parent flex container, a long list will overflow and add a scrollbar to the entire page instead of just the list panel.
+**COMMON MISTAKE — List Overflows Page:**
+
+If your list overflows the entire page (adding a scrollbar to the whole window instead of just the list), you're missing one of these:
+
+1. `overflow-hidden` on the flex container wrapping list + detail
+2. `min-h-0` on the flex container (allows flex children to shrink)
+3. `h-full` on the list container itself
+4. `flex-1` on the ScrollArea inside the list
+
+The full chain must be unbroken:
+```
+Page (flex flex-col h-screen)
+  └─ PageHeader (shrink-0)
+  └─ Content area (flex min-h-0 flex-1 overflow-hidden)  ← MUST have overflow-hidden
+       └─ List panel (w-64 shrink-0)
+            └─ List container (flex h-full flex-col)  ← MUST have h-full
+                 └─ ScrollArea (flex-1)  ← handles scrolling
+       └─ Detail panel (min-h-0 flex-1 overflow-hidden)
+```
+
+### No Extra Headers in List Panel
+
+The list panel should contain ONLY the scrollable list items — **no section headers, no filter labels, no "MONTHLY BILLS" type headers**. All page context goes in the PageHeader at the top.
+
+```tsx
+{/* WRONG — extra headers inside list panel */}
+<div className="flex h-full flex-col">
+  <div className="px-4 py-2 text-xs uppercase">Filter Stack</div>  {/* NO */}
+  <div className="px-4 py-2 text-xs uppercase">Monthly Bills</div>  {/* NO */}
+  <ScrollArea>...</ScrollArea>
+</div>
+
+{/* CORRECT — just the scrollable list */}
+<div className="flex h-full flex-col border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
+  <ScrollArea className="flex-1">
+    <div className="flex flex-col">
+      {items.map(item => <Link ... />)}
+    </div>
+  </ScrollArea>
+</div>
+```
 
 - Background: `bg-[#FAF8F7] dark:bg-[#1a1918]` (slightly warmer than `bg-card`)
 - Border: `border-r border-border` separating from the right column
 - No separators between items
 - No padding on the outer `flex flex-col` wrapper
+- **No section headers or labels inside the list**
 
 ### Individual Item
 
@@ -523,37 +582,64 @@ Always uses:
 
 ## Guide Page (Step Grid)
 
-The guide page uses a 2x2 grid of sealed cells for steps, plus a full-width section below.
+The guide page uses a simple 2x2 grid of sealed cells for steps.
 
 **CRITICAL RULES**:
-1. The guide page should NOT have additional title areas inside cells — only the top PageHeader
-2. The entire page uses `bg-card` (white) background, not secondary/cream
-3. **NEVER use Card components or rounded bordered boxes inside step cells** — steps are plain text with command blocks, no decorative cards
+1. **ONE PageHeader only** — at the very top, no other title bars or section headers anywhere
+2. **bg-card background** — the entire page uses white (light) / dark card (dark) background
+3. **NO Card components** — steps are plain text directly in the grid cells
+4. **NO nested sections** — don't create "iPhone section" and "Android section" with their own headers
+5. **NO rounded bordered boxes** — the grid borders ARE the visual structure
 
 ### Page Structure
+
+The guide page is a FLAT structure — just PageHeader + grid rows:
 
 ```tsx
 <ScrollArea className="h-full bg-card">
   <div className="flex flex-col">
+    {/* ONE title bar only */}
     <PageHeader title="Quick Start Guide" description="Get started with..." />
     
-    {/* Steps row 1 */}
+    {/* Steps row 1 — directly in grid, no wrapper sections */}
     <div className="grid grid-cols-2 border-b border-border">
-      <div className="min-h-[216px] px-8 py-8">{/* Step 1 */}</div>
-      <div className="min-h-[216px] border-l border-border px-8 py-8">{/* Step 2 */}</div>
+      <div className="min-h-[216px] px-8 py-8">{/* Step 1 content */}</div>
+      <div className="min-h-[216px] border-l border-border px-8 py-8">{/* Step 2 content */}</div>
     </div>
     
     {/* Steps row 2 */}
     <div className="grid grid-cols-2 border-b border-border">
-      <div className="min-h-[216px] px-8 py-8">{/* Step 3 */}</div>
-      <div className="min-h-[216px] border-l border-border px-8 py-8">{/* Step 4 */}</div>
+      <div className="min-h-[216px] px-8 py-8">{/* Step 3 content */}</div>
+      <div className="min-h-[216px] border-l border-border px-8 py-8">{/* Step 4 content */}</div>
     </div>
     
-    {/* Full-width section */}
+    {/* Optional full-width section */}
     <div className="px-8 py-8">{/* Additional content */}</div>
   </div>
 </ScrollArea>
 ```
+
+**WRONG — Don't do this:**
+
+```tsx
+{/* WRONG — nested sections with their own headers */}
+<div className="grid grid-cols-2">
+  <div className="p-8">
+    <h2>iPhone install track</h2>  {/* NO — this creates a nested section */}
+    <p>Description...</p>
+    <div className="border rounded-lg p-4">  {/* NO — nested card */}
+      <span>STEP 1</span>
+      ...
+    </div>
+  </div>
+  <div className="p-8">
+    <h2>Android install track</h2>  {/* NO */}
+    ...
+  </div>
+</div>
+```
+
+The grid cells ARE the sections — don't nest sections inside them.
 
 ### Step Cell
 
