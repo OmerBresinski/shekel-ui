@@ -38,23 +38,41 @@ Icon-only collapsible sidebar using shadcn's `Sidebar` component.
 <Sidebar collapsible="icon" className="border-r border-border bg-[#FAF8F7] dark:bg-[#1a1918]">
 ```
 
-### Icon Centering (CRITICAL)
+### Icon Centering Fix (CRITICAL)
 
-When using `collapsible="icon"`, the sidebar collapses to 48px wide. The `SidebarGroup` component has default `px-2` padding which can make icons appear off-center.
+When using `collapsible="icon"`, the default shadcn sidebar has icons that appear left-aligned instead of centered. **Two fixes are required in `src/components/ui/sidebar.tsx`:**
 
-**To ensure icons are perfectly centered**, remove the horizontal padding from `SidebarGroup`:
+#### 1. Update `sidebarMenuButtonVariants` (around line 473)
 
-```tsx
-<SidebarGroup className="px-0">
-  <SidebarGroupContent>
-    <SidebarMenu>
-      {/* menu items */}
-    </SidebarMenu>
-  </SidebarGroupContent>
-</SidebarGroup>
+Change the collapsed state styles from:
+```
+group-data-[collapsible=icon]:p-2!
 ```
 
-Or override at the `SidebarContent` level if you have multiple groups.
+To:
+```
+group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center [&>span:last-child]:group-data-[collapsible=icon]:hidden
+```
+
+What this does:
+- `p-0!` — Removes padding so the icon can be truly centered in the 32px box
+- `justify-center` — Centers the flex content (the icon) horizontally
+- `[&>span:last-child]:group-data-[collapsible=icon]:hidden` — Hides the label text when collapsed (instead of just truncating it), so only the icon remains
+
+#### 2. Update `SidebarMenuItem` function (around line 462)
+
+Change:
+```tsx
+className={cn("group/menu-item relative", className)}
+```
+
+To:
+```tsx
+className={cn("group/menu-item relative flex justify-center", className)}
+```
+
+What this does:
+- Makes the menu item a flex container that centers its child (the button) horizontally within the sidebar width
 
 ### Logo
 
